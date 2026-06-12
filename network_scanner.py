@@ -5,7 +5,6 @@ def get_live_hardware_networks():
     networks = []
     try:
         if sys.platform.startswith("win"):
-            # Real Windows CMD network hardware scanning pipeline
             cmd = "netsh wlan show networks mode=bssid"
             stdout = subprocess.check_output(cmd, shell=True).decode('utf-8', errors='ignore')
             lines = stdout.split('\n')
@@ -15,17 +14,19 @@ def get_live_hardware_networks():
                 line = line.strip()
                 if line.startswith("SSID"):
                     parts = line.split(":")
-                    if len(parts) > 1: current_ssid = parts[1].strip()
+                    if len(parts) > 1: 
+                        # Fix: Dynamic string splitting to catch raw SSID after the colon
+                        current_ssid = ":".join(parts[1:]).strip()
                 elif line.startswith("Authentication"):
                     parts = line.split(":")
-                    if len(parts) > 1: current_cipher = parts[1].strip()
+                    if len(parts) > 1: current_cipher = parts[1:].strip()
                 elif line.startswith("BSSID 1"):
                     parts = line.split(":")
                     if len(parts) > 1: current_bssid = ":".join(parts[1:]).strip()
                 elif line.startswith("Signal"):
                     parts = line.split(":")
                     if len(parts) > 1:
-                        current_signal = parts[1].strip()
+                        current_signal = parts[1:].strip()
                         if current_ssid and current_bssid:
                             networks.append({
                                 "ssid": current_ssid[:21] if current_ssid else "Hidden_SSID",
@@ -36,21 +37,26 @@ def get_live_hardware_networks():
                             })
                             current_ssid, current_bssid = "", ""
         else:
-            # Real Arch Linux terminal network manager hardware probing
-            cmd = "nmcli -f SSID,BSSID,SIGNAL,BARS,SECURITY,CHAN dev wifi list"
+            # Fix: Utilizing customized delimiter options on nmcli payload parsing
+            cmd = "nmcli -t -f SSID,BSSID,SIGNAL,SECURITY,CHAN dev wifi list"
             stdout = subprocess.check_output(cmd, shell=True).decode('utf-8', errors='ignore')
             lines = stdout.strip().split('\n')
-            if len(lines) > 1:
-                for line in lines[1:]:
-                    parts = line.split()
-                    if len(parts) >= 5:
-                        networks.append({
-                            "ssid": parts[0][:21] if parts[0] != "--" else "Hidden_SSID",
-                            "bssid": parts[1],
-                            "signal": parts[2] + "%",
-                            "freq": f"CH {parts[-2]}",
-                            "cipher": parts[-1][:13]
-                        })
+            for line in lines:
+                parts = line.split(':')
+                if len(parts) >= 5:
+                    # Capturing absolute cell structures correctly over multi-byte names
+                    ssid = parts[0] if parts[0] != "" else "Hidden_SSID"
+                    bssid = ":".join(parts[1:7])
+                    signal = parts[7] + "%"
+                    cipher = parts[8]
+                    chan = parts[9]
+                    networks.append({
+                        "ssid": ssid[:21],
+                        "bssid": bssid,
+                        "signal": signal,
+                        "freq": f"CH {chan}",
+                        "cipher": cipher[:13]
+                    })
     except Exception:
         pass
         
@@ -65,7 +71,6 @@ def analyze_best_network(networks):
     
     for net in networks:
         try:
-            # Parsing real-time numeric signal values directly
             sig_val = int(net["signal"].replace("%", "").replace("dBm", "").strip())
         except Exception:
             sig_val = 0
@@ -77,4 +82,3 @@ def analyze_best_network(networks):
         reason = f"Highest live signal metrics verified at {best_net['signal']} via channel {best_net['freq']}."
         return best_net["ssid"], reason
     return "None_Detected", "Hardware link scan status failed to capture stable telemetry data."
-
