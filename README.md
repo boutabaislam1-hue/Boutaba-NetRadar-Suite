@@ -29,7 +29,7 @@ To deploy the suite across isolated local systems, invoke the execution orchestr
 
 ```bash
 # Clone the repository structure
-git clone https://github.com
+git clone https://github.com/boutabaislam1-hue
 cd Boutaba-NetRadar-Suite
 
 # Execute the master system auditor
