@@ -5,7 +5,6 @@ from datetime import datetime
 import network_scanner
 
 def check_real_tor_connection():
-    # Live TCP socket check over loopback port 9050 to verify local Tor daemon presence
     tor_proxy_port = 9050
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,14 +19,12 @@ def check_real_tor_connection():
         return "ROUTING LAYER PANIC ➔ TERMINAL SERVICE FAULT"
 
 def run_orchestrator():
-    # Low-level memory structure manipulation block
     try:
         raw_buffer = struct.pack('!I', 0x7F000001)
         hex_vector = raw_buffer.hex().upper()
     except Exception:
         hex_vector = "7F000001"
 
-    # Capturing real-time active environment variables and Tor sockets live
     tor_status = check_real_tor_connection()
     live_networks = network_scanner.get_live_hardware_networks()
     best_ssid, best_reason = network_scanner.analyze_best_network(live_networks)
@@ -70,7 +67,6 @@ def run_orchestrator():
     report_lines.append("------------------------------------------------------------------------------------------")
     report_lines.append("Aggregating multi-engine data outputs into unified raw text matrix formats...")
     report_lines.append("")
-    
     report_lines.append("+-----------------------+-------------------+-----------------+-----------+---------------+")
     report_lines.append("| WIRELESS TARGET SSID  | BSSID METADATA    | SIGNAL LEVEL    | FREQUENCY | CIPHER SUITE  |")
     report_lines.append("+-----------------------+-------------------+-----------------+-----------+---------------+")
@@ -113,4 +109,3 @@ def run_orchestrator():
 
 if __name__ == "__main__":
     run_orchestrator()
-
